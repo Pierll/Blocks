@@ -1,0 +1,23 @@
+ /* !!! DEBUG SECTION !!!*/
+    for (int i = 0; i < NOMBRE_TETROMINO; i++) {
+        printf("data piece %d :\n", i);
+        for (int z = 0; z < 4; z++)  {
+            for (int x = 0; x < TAILLE_MAX_TETROMINO; x++) {
+                for (int y = 0; y < TAILLE_MAX_TETROMINO; y++) {
+                    printf("%d", catalogue_tetromino[i].data[z][x][y]);
+                }
+                puts("");
+            }
+             puts("----------");
+        }
+        printf("rayon rotation : %d\n", catalogue_tetromino[i].rayon_rotation);
+        printf("etat rotation : %d\n", catalogue_tetromino[i].etat_rotation);
+        printf("direction_autorisee: ");//DEBUG
+        for (int k = 0; k < 3; k++) {
+            printf("%d", catalogue_tetromino[i].direction_autorisee[k]);//DEBUG
+        } 
+        puts("");
+        printf("Couleur main: %d, %d, %d, %d\n", catalogue_tetromino[i].couleur.r,  catalogue_tetromino[i].couleur.g, catalogue_tetromino[i].couleur.b , catalogue_tetromino[i].couleur.a);
+
+    }
+    /* !!! FIN DEBUG SECTION !!!*/
