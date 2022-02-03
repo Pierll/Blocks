@@ -24,8 +24,8 @@ void afficher_terrain(SDL_Window* Fenetre, SDL_Renderer* pRenderer, Case terrain
     for (int y = 0; y<HAUTEUR_TERRAIN*facteur; y+=facteur) {
         for (int x = 0; x<LARGEUR_TERRAIN*facteur; x+=facteur) {
             //printf("%d",terrain[x/facteur][y/facteur].valeur); // DEBUG
-            //printf(" %d,%d ",x/facteur, y/facteur);
-            dessiner_rectangle(pRenderer, x, y, TAILLE_BLOCK, TAILLE_BLOCK, terrain[x/facteur][y/facteur].couleur);//diviser par le facteur pour que les valleurs aillent de 0 à 19
+            //printf(" %d,%d ",x/facteur, y/facteur); //DEBUG
+            dessiner_rectangle(pRenderer, x, y, TAILLE_BLOCK, TAILLE_BLOCK, terrain[x/facteur][y/facteur].couleur);//diviser par le facteur pour que les valeurs aillent de 0 à 19
         }
         //printf("\n"); // DEBUG
     }
