@@ -5,18 +5,24 @@
 #define NOMBRE_TETROMINO 7
 
 enum type_piece{I, J, L, O, S, T, Z};
-enum direction{GAUCHE,BAS,DROITE};
+enum direction{GAUCHE,BAS,DROITE,HAUT};
+
+typedef struct Coord {
+	int x;
+	int y;
+} Coord;
 
 typedef struct Tetromino {
 	int type;
-	int x; //interne
-	int y; //interne
-	//int extremite_x; //emplacement de l'extremité droite et bas de la pièce dans sa matrice data
-	//int extremite_y; // "" haute
+	Coord centre; //coordonnée à partir duquel la zone entournat la pièce est déterminée
+	int x,y;
+	Coord *coords; //tableu de coordonnées à allouer
+	int nbr_coords; //taille du tableau de coords
+
 	int data[4][TAILLE_MAX_TETROMINO][TAILLE_MAX_TETROMINO]; //4 matrices représentants les 4 rotations de la pièce
 	int rayon_rotation;
 	int etat_rotation; //angle (1=0°,2= 90°,3=180°,4=270°)
-	int direction_autorisee[3]; //voir enum direction
+	int direction_autorisee[4]; //voir enum direction
 	SDL_Color couleur;
 } Tetromino;
 

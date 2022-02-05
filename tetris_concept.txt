@@ -44,3 +44,7 @@ Rôle SDL :
 
 afficher la matrice 
 détecter touches
+
+###NOTES###
+
+Si rotation : avancer changer rayon x
