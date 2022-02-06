@@ -20,11 +20,13 @@ typedef struct Tetromino {
 
 	int data[4][TAILLE_MAX_TETROMINO][TAILLE_MAX_TETROMINO]; //4 matrices représentants les 4 rotations de la pièce
 	int rayon_rotation;
-	int etat_rotation; //angle (1=0°,2= 90°,3=180°,4=270°)
+	//int etat_rotation; //angle (1=0°,2= 90°,3=180°,4=270°)
 	int direction_autorisee[4]; //voir enum direction
 	SDL_Color couleur;
 } Tetromino;
 
+int deplacement_tetrimino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int direction);
+int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
 void remplir_catalogue(Tetromino catalogue_tetromino[]);
 void choisir_sequence_tetromino(int sequence_tetromino[]);
 int inserer_tetromino(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);

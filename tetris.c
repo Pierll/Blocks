@@ -8,8 +8,190 @@
 #include "sdl.h"
 #include "tetris.h"
 
-int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) { 
 
+
+
+void afficher_terrain_ascii(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
+    printf("   0123456789\n");
+    printf("   ---------\n");
+    for (int y = 0; y < HAUTEUR_TERRAIN; y++) {
+        if (y < 10) {
+            printf(" %d-", y);
+        } else {
+            printf("%d-", y);
+        }
+        for (int x = 0; x < LARGEUR_TERRAIN; x++) {
+            printf("%d", terrain[x][y].valeur);
+        }
+        puts("");
+    }
+}
+
+void geler_tetromino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
+    for (int i = 0; i < t->nbr_coords; i++) {
+        terrain[t->coords[i].x][t->coords[i].y].valeur = 1;
+    }
+}
+
+int main(int argc, char *argv[]) {
+    srand(time(NULL)); // générateur nombre aléatoire
+
+    /** INIT SDL **/
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        error_sdl_launch("Impossible d'initialiser la SDL");
+    }
+    SDL_Window *Fenetre = NULL;
+    Fenetre =
+        SDL_CreateWindow("Tetris", SDL_WINDOWPOS_UNDEFINED,
+                         SDL_WINDOWPOS_UNDEFINED, LARGEUR_FENETRE, HAUTEUR_FENETRE, SDL_WINDOW_SHOWN);
+    SDL_Renderer *pRenderer =
+        SDL_CreateRenderer(Fenetre, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Event event;
+    /** 	FIN INIT SDL	**/
+
+    Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN] = {0}; // matrice 20*10
+    /*DEBUG CODE TERRAIN*/
+    Case c = {1, (SDL_Color) {
+        255, 0, 0, 255
+    }
+             };
+    terrain[9][1] = c;
+    terrain[8][2] = c;
+    //terrain[4][1] = c;
+    //terrain[8][0] = c;
+    /* FIN DEBUG CODE TERRAIN*/
+    Tetromino catalogue_tetromino[NOMBRE_TETROMINO];
+    int sequence_tetromino[NOMBRE_TETROMINO];
+    int tetromino_sac = 1;
+    int test_event = 777;
+    remplir_catalogue(catalogue_tetromino);
+    Tetromino t =
+        catalogue_tetromino[tetromino_sac]; // choisir le tetromino du sac
+    int frame_attente = 1000.0 / FPS;
+    int frame_debut = 0;
+    int frame_delai;
+    int difficultee = 1000; //en milliseconde
+    int last_time = 0, current_time; //pour calculer le temps écoulé
+    if (!inserer_tetromino(&t, terrain)) {
+        game_over();
+    }
+
+    for (int i = 0; i < t.nbr_coords; i++) {
+        printf("%d,%d\n", t.coords[i].x, t.coords[i].y);
+    }
+    afficher_terrain_ascii(terrain);
+    
+    /* BOUCLE PRINCIPALE */
+    while (1) {
+        /*if (tetromino_sac > 7) { //le sac est vide  // A IMPLEMENTER
+            choisir_sequence_tetromino(sequence_tetromino);
+            tetromino_sac = 0;
+        }*/
+        test_event = event_clavier(&event);
+        if (test_event != 777) { // si l'utilisateur appuie sur une touche
+            verifier_mouvement_piece(&t, terrain);
+            switch (test_event) {
+            case FGAUCHE:
+                puts("GAUCHE");
+                deplacement_tetrimino(&t, terrain, GAUCHE);
+                break;
+            case FBAS:
+                puts("BAS");
+                deplacement_tetrimino(&t, terrain, BAS);
+                break;
+            case FDROIT:
+                puts("DROIT");
+                deplacement_tetrimino(&t, terrain, DROITE);
+                break;
+            case FHAUT:
+                puts("HAUT");
+                rotation(&t, terrain);
+                break;
+            case ESPACE:
+                puts("ESPACE");
+                /* instachute */
+                while (deplacement_tetrimino(&t, terrain, BAS)) {verifier_mouvement_piece(&t, terrain);}
+                //geler_tetromino(&t, terrain);
+                break;
+            }
+            afficher_terrain_ascii(terrain); //debug
+        }
+
+        
+
+        /* GESTION DELAI AFFICHAGE */
+        frame_delai = frame_attente - (SDL_GetTicks() - frame_debut);
+        if (frame_delai > 0) {
+            SDL_Delay(frame_delai);
+        }
+        frame_debut = SDL_GetTicks();
+        /** FIN GESTION DELAI AFFICHAGE **/
+        
+        /** GESTION CHUTE TETROMINO **/
+        current_time = SDL_GetTicks();
+        if (current_time > (last_time + difficultee)) {
+            verifier_mouvement_piece(&t, terrain);
+            if (!deplacement_tetrimino(&t, terrain, BAS)) {
+                geler_tetromino(&t, terrain);
+            }
+            last_time = current_time;
+            afficher_terrain_ascii(terrain); //debug
+        }
+        /** FIN GESTION CHUTE TETROMINO **/
+        afficher_terrain(Fenetre, pRenderer, terrain);
+    }
+    free(t.coords);
+    SDL_Quit();
+    return 0;
+}
+
+int deplacement_tetrimino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int direction) {
+
+    if (t->direction_autorisee[direction] == 0) {
+        puts("Echec deplacement : Direction non autorisee");
+        return 0;
+    }
+
+    for (int i = 0; i < t->nbr_coords; i++) {
+        /* on commence par retirer toute les cases de l'ancienne position */
+        supprimer_case(t->coords[i].x, t->coords[i].y, terrain);
+        switch (direction) {
+        case DROITE:
+            (t->coords[i].x)++;
+            break;
+        case GAUCHE:
+            (t->coords[i].x)--;
+            break;
+        case BAS:
+            (t->coords[i].y)++;
+            break;
+        }
+
+    }
+
+    for (int i = 0; i < t->nbr_coords; i++) {
+        /* on place les cases dans les nouvelles positions */
+        terrain[t->coords[i].x][t->coords[i].y].valeur = 2;
+        terrain[t->coords[i].x][t->coords[i].y].couleur = (SDL_Color) t->couleur;
+    }
+    switch (direction) { //on update le pos
+        case DROITE:
+            (t->pos.x)++;
+            break;
+        case GAUCHE:
+            (t->pos.x)--;
+            break;
+        case BAS:
+            (t->pos.y)++;
+            break;
+        }
+    printf("Nouvelle pos: %d, %d\n", t->pos.x, t->pos.y);
+    return 1;
+}
+
+
+int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) { //nbr_rotation sert à définir combien de fois une rotation de 90° seras effectuée
+    
     if ((t->pos.y + t->rayon_rotation >= HAUTEUR_TERRAIN+1) || (t->pos.x + t->rayon_rotation >= LARGEUR_TERRAIN+1) || (t->pos.x < 0)) { //prévenir les depassement de tableau
         return 0;
     }
@@ -36,35 +218,45 @@ int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
         }
     }
     
-    /* copie de la rotation de la pièce dans le buffer rotat */
-    i = 0; 
-    j = 0;
-    for (int y = 0; y < t->rayon_rotation; y++, i++) {
+    int n = 1; //nombre de rotations
+    int ok;
+    do {
+        
+        /* copie de la rotation de la pièce dans le buffer rotat */
+        ok = 1;
+        i = 0; 
         j = 0;
-        for (int x = t->rayon_rotation-1; x > -1; x--, j++)  {
-            buffer_rotat[i][j] = buffer_piece[x][y];
-            //printf("%d", buffer_piece[x][y]);
-        }
-        //puts("");
-    }
-    
-    for (i = 0; i < t->rayon_rotation; i++) {
-        for (int u = 0; u < t->rayon_rotation; u++) {
-            printf("%d", buffer_rotat[i][u]);
-        }
-        printf("\n");
-    }
-    
-    /* vérification d'une obstruction de la pièce */
-     for (i = 0; i < t->rayon_rotation; i++) {
-        for (int y = 0; y < t->rayon_rotation; y++) {
-            if (buffer_rotat[i][y] == 2 && buffer_blocs[i][y] == 1) { //la rotation ne peut avoir lieu, un bloc gène
-                printf("Impossible d'effectuer la rotation de la pièce !\n");
-                return 0;
+        for (int y = 0; y < t->rayon_rotation; y++, i++) {
+            j = 0;
+            for (int x = t->rayon_rotation-1; x > -1; x--, j++)  {
+                buffer_rotat[i][j] = buffer_piece[x][y];
+                //printf("%d", buffer_piece[x][y]);
             }
-                
+            //puts("");
         }
-    }
+        
+        // on copie le tableau buffer_rotat dans buffer pièce pour donner la posibilitée d'une autre rotation
+        for (i = 0; i < t->rayon_rotation; i++) {
+            for (int u = 0; u < t->rayon_rotation; u++) {
+                buffer_piece[i][u] = buffer_rotat[i][u];
+            }
+        }
+        
+        /* vérification d'une obstruction de la pièce */
+        for (i = 0; i < t->rayon_rotation; i++) {
+            for (int y = 0; y < t->rayon_rotation; y++) {
+                if (buffer_rotat[i][y] == 2 && buffer_blocs[i][y] == 1) { //la rotation ne peut avoir lieu, un bloc gène
+                    printf("Impossible d'effectuer la rotation de la pièce !\n");
+                    if (n > 4)  //nombre max de tentative
+                        return 0;
+                    printf("%d tentative...\n", n);
+                    ok = 0;
+                    n++;
+                }
+                    
+            }
+        }
+    } while (!ok);
     
     /* tout est bon, on retire l'ancienne pièce du terrain et place la nouvelle version */
     
@@ -100,187 +292,6 @@ int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
     free(buffer_rotat);
     
     return 1;
-}
-
-void swap(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int x, int y, int x2,
-          int y2) {
-    Case tmp = terrain[x][y];
-    terrain[x][y] = terrain[x2][y2];
-    terrain[x2][y2] = tmp;
-}
-
-int deplacement_tetrimino(Tetromino *t,
-                          Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN],
-                          int direction) {
-
-    if (t->direction_autorisee[direction] == 0) {
-        puts("Echec deplacement : Direction non autorisee");
-        return 0;
-    }
-
-    for (int i = 0; i < t->nbr_coords; i++) {
-        /* on commence par retirer toute les cases de l'ancienne position */
-        /*terrain[t->coords[i].x][t->coords[i].y].valeur = 0;
-        terrain[t->coords[i].x][t->coords[i].y].couleur = (SDL_Color) {
-            0, 0, 0, 0
-        };*/
-        supprimer_case(t->coords[i].x, t->coords[i].y, terrain);
-        switch (direction) {
-        case DROITE:
-            (t->coords[i].x)++;
-            break;
-        case GAUCHE:
-            (t->coords[i].x)--;
-            break;
-        case BAS:
-            (t->coords[i].y)++;
-            break;
-        }
-
-    }
-
-    for (int i = 0; i < t->nbr_coords; i++) {
-        /* on place les cases dans les nouvelles positions */
-        terrain[t->coords[i].x][t->coords[i].y].valeur = 2;
-        terrain[t->coords[i].x][t->coords[i].y].couleur = (SDL_Color) t->couleur;
-        //printf("Couleur in deplacement: %d\n", t->couleur);
-    }
-    switch (direction) { //on update le pos
-        case DROITE:
-            (t->pos.x)++;
-            break;
-        case GAUCHE:
-            (t->pos.x)--;
-            break;
-        case BAS:
-            (t->pos.y)++;
-            break;
-        }
-    printf("Nouvelle pos: %d, %d\n", t->pos.x, t->pos.y);
-    return 1;
-}
-
-void afficher_terrain_ascii(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
-    printf("   0123456789\n");
-    printf("   ---------\n");
-    for (int y = 0; y < HAUTEUR_TERRAIN; y++) {
-        if (y < 10) {
-            printf(" %d-", y);
-        } else {
-            printf("%d-", y);
-        }
-        for (int x = 0; x < LARGEUR_TERRAIN; x++) {
-            printf("%d", terrain[x][y].valeur);
-        }
-        puts("");
-    }
-}
-
-int main(int argc, char *argv[]) {
-    srand(time(NULL)); // générateur nombre aléatoire
-
-    /** INIT SDL **/
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        error_sdl_launch("Impossible d'initialiser la SDL");
-    }
-    SDL_Window *Fenetre = NULL;
-    Fenetre =
-        SDL_CreateWindow("Tetris", SDL_WINDOWPOS_UNDEFINED,
-                         SDL_WINDOWPOS_UNDEFINED, LARGEUR_FENETRE, HAUTEUR_FENETRE, SDL_WINDOW_SHOWN);
-    SDL_Renderer *pRenderer =
-        SDL_CreateRenderer(Fenetre, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Event event;
-    /** 	FIN INIT SDL	**/
-
-    Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN] = {0}; // matrice 20*10
-    /*DEBUG CODE TERRAIN*/
-    Case c = {1, (SDL_Color) {
-        255, 0, 0, 255
-    }
-             };
-    terrain[9][1] = c;
-    terrain[6][2] = c;
-    //terrain[4][1] = c;
-    //terrain[8][0] = c;
-    /* FIN DEBUG CODE TERRAIN*/
-    Tetromino catalogue_tetromino[NOMBRE_TETROMINO];
-    int sequence_tetromino[NOMBRE_TETROMINO];
-    int tetromino_sac = 1;
-    int test_event = 777;
-    remplir_catalogue(catalogue_tetromino);
-    Tetromino t =
-        catalogue_tetromino[tetromino_sac]; // choisir le tetromino du sac
-    int frame_attente = 1000.0 / FPS;
-    int frame_debut = 0;
-    int frame_delai;
-
-    /* DEBUG */
-    //rotation(t);
-    //exit(1);
-
-
-    if (!inserer_tetromino(&t, terrain)) {
-        game_over();
-    }
-
-    for (int i = 0; i < t.nbr_coords; i++) {
-        printf("%d,%d\n", t.coords[i].x, t.coords[i].y);
-    }
-    afficher_terrain_ascii(terrain);
-    /* BOUCLE PRINCIPALE */
-    while (1) {
-        /*if (tetromino_sac > 7) { //le sac est vide  // A IMPLEMENTER
-            choisir_sequence_tetromino(sequence_tetromino);
-            tetromino_sac = 0;
-        }*/
-        test_event = event_clavier(&event);
-        if (test_event != 777) { // si l'utilisateur appuie sur une touche
-            verifier_mouvement_piece(&t, terrain);
-
-
-            /* SECTION DEBUG */
-            for (int k = 0; k < 3; k++) {
-                printf("%d", t.direction_autorisee[k]); // DEBUG
-            }
-            puts("");
-            /* FIN SECTION DEBUG */
-            switch (test_event) {
-            case FGAUCHE:
-                puts("GAUCHE");
-                deplacement_tetrimino(&t, terrain, GAUCHE);
-                break;
-            case FBAS:
-                puts("BAS");
-                deplacement_tetrimino(&t, terrain, BAS);
-                break;
-            case FDROIT:
-                puts("DROIT");
-                deplacement_tetrimino(&t, terrain, DROITE);
-                break;
-            case FHAUT:
-                puts("HAUT");
-                rotation(&t, terrain);
-                break;
-            case ESPACE:
-                puts("ESPACE");
-                break;
-            }
-            afficher_terrain_ascii(terrain);
-        }
-
-        afficher_terrain(Fenetre, pRenderer, terrain);
-
-        /* GESTION DELAI AFFICHAGE */
-        frame_delai = frame_attente - (SDL_GetTicks() - frame_debut);
-        if (frame_delai > 0) {
-            SDL_Delay(frame_delai);
-        }
-        frame_debut = SDL_GetTicks();
-        /** FIN GESTION DELAI AFFICHAGE **/
-    }
-    free(t.coords);
-    SDL_Quit();
-    return 0;
 }
 
 void remplir_catalogue(Tetromino catalogue_tetromino[]) {
@@ -334,7 +345,7 @@ void remplir_catalogue(Tetromino catalogue_tetromino[]) {
             catalogue_tetromino[i].couleur = (SDL_Color) {
                 rgb[0], rgb[1], rgb[2], 255
             };
-            catalogue_tetromino[i].etat_rotation = 0;
+            //catalogue_tetromino[i].etat_rotation = 0;
             for (int y = 0; y < 3; y++) {
                 catalogue_tetromino[i].direction_autorisee[y] =
                     1; // toute les directions autorisée par défaut
