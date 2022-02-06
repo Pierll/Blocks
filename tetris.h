@@ -18,23 +18,22 @@ typedef struct Tetromino {
 	Coord *coords; //tableu de coordonnées à allouer
 	int nbr_coords; //taille du tableau de coords
 
-	int data[4][TAILLE_MAX_TETROMINO][TAILLE_MAX_TETROMINO]; //4 matrices représentants les 4 rotations de la pièce
+	int data[TAILLE_MAX_TETROMINO][TAILLE_MAX_TETROMINO]; //4 matrices représentants les 4 rotations de la pièce
 	int rayon_rotation;
 	//int etat_rotation; //angle (1=0°,2= 90°,3=180°,4=270°)
 	int direction_autorisee[4]; //voir enum direction
 	SDL_Color couleur;
 } Tetromino;
 
+void geler_tetromino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
 int deplacement_tetrimino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int direction);
 void inserer_prochain_tetromino(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int sac_tetromino[NOMBRE_TETROMINO], Tetromino catalogue_tetromino[NOMBRE_TETROMINO], int* tetromino_sac);
 int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
 void remplir_catalogue(Tetromino catalogue_tetromino[]);
 void choisir_sequence_tetromino(int sequence_tetromino[]);
 int inserer_tetromino(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
-void physique(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
 void verifier_mouvement_piece(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]); 
 void rotation_tetromino(Tetromino* t, int angle);
-void gravitee_piece(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
 void game_over();
 
 #endif

@@ -7,7 +7,7 @@
 
 #include "sdl.h"
 #include "tetris.h"
-
+#include "pile.h"
 
 
 
@@ -27,11 +27,7 @@ void afficher_terrain_ascii(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
     }
 }
 
-void geler_tetromino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
-    for (int i = 0; i < t->nbr_coords; i++) {
-        terrain[t->coords[i].x][t->coords[i].y].valeur = 1;
-    }
-}
+
 
 int main(int argc, char *argv[]) {
     srand(time(NULL)); // générateur nombre aléatoire
@@ -145,6 +141,41 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
+void nettoyer_lignes(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
+    Pile* p = creerPile();
+    /* on commence par compter le nbr de ligne completes */
+    for (int y = HAUTEUR_TERRAIN; y > 0; y--) {
+        int complete = 1;
+        for (int x = 0; x < LARGEUR_TERRAIN; x++) {
+            if (terrain[x][y].valeur != 1) complete = 0;
+        }
+        if (complete) {
+            empiler(p, y);
+            printf("Ligne complète : %d\n", y);
+        }
+    }
+    
+    /* on applique la gravitée pour combler la ligne manquante de haut en bas */
+    if (p->nbrElements > 0) {
+        int elements = p->nbrElements;
+        for (int k = 0; k < elements; k++) {
+            int ligne_y = depiler(p);
+            for (int x = 0; x < LARGEUR_TERRAIN; x++)
+                for (int y = ligne_y; y > 0; y--) {
+                    terrain[x][y] = terrain[x][y-1];
+                } 
+        }
+    }
+    detruirePile(p);
+}
+
+void geler_tetromino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
+    for (int i = 0; i < t->nbr_coords; i++) {
+        terrain[t->coords[i].x][t->coords[i].y].valeur = 1;
+    }
+    nettoyer_lignes(terrain);
+}
+
 int deplacement_tetrimino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int direction) {
     verifier_mouvement_piece(t, terrain);
     if (t->direction_autorisee[direction] == 0) {
@@ -190,7 +221,7 @@ int deplacement_tetrimino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TE
 }
 
 void inserer_prochain_tetromino(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int sac_tetromino[NOMBRE_TETROMINO], Tetromino catalogue_tetromino[NOMBRE_TETROMINO], int* tetromino_sac) {
-    if (*tetromino_sac >= NOMBRE_TETROMINO) { //le sac est vide, on le melange a nouveau
+    if (*tetromino_sac >= NOMBRE_TETROMINO-1) { //le sac est vide, on le melange a nouveau
         printf("Nouveau sac\n");
         choisir_sequence_tetromino(sac_tetromino); 
         *tetromino_sac = 0;
@@ -326,17 +357,17 @@ void remplir_catalogue(Tetromino catalogue_tetromino[]) {
             // printf("Ligne : %d : %s\n",i, ligne); //DEBUG
             catalogue_tetromino[i].type = i;
 
-            /* Remplir les matrices data[][][] */
+            /* Remplir la matrice data[][] */
             int pos = 0;
-            for (int z = 0; z < 4; z++) {
-                for (int x = 0; x < TAILLE_MAX_TETROMINO; x++) {
-                    for (int y = 0; y < TAILLE_MAX_TETROMINO; y++) {
-                        catalogue_tetromino[i].data[z][x][y] =
-                            ligne[pos] - '0'; // '-0' pour convertir char en int
-                        pos++;
-                    }
+            
+            for (int x = 0; x < TAILLE_MAX_TETROMINO; x++) {
+                for (int y = 0; y < TAILLE_MAX_TETROMINO; y++) {
+                    catalogue_tetromino[i].data[x][y] =
+                        ligne[pos] - '0'; // '-0' pour convertir char en int
+                    pos++;
                 }
             }
+            
             char *next = strtok(ligne, ",");
             next = strtok(NULL, ","); // lire la valeur du rayon_rotation
             if (next == NULL) {
@@ -380,14 +411,13 @@ void choisir_sequence_tetromino(int sequence_tetromino[]) {
     }
 }
 
-int inserer_tetromino(Tetromino *t,
-                      Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
+int inserer_tetromino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
     puts("***INSERTION TETROMINO***"); /// DEBUG
 
     int nbr_coords = 0;
     for (int x = 0; x < TAILLE_MAX_TETROMINO; x++) { //compte le nombre de block dans le tetromino pour allouer le tableau
         for (int y = 0; y < TAILLE_MAX_TETROMINO; y++) {
-            if (t->data[0][x][y] == 2) {
+            if (t->data[x][y] == 2) {
                 nbr_coords++;
             }
         }
@@ -403,10 +433,10 @@ int inserer_tetromino(Tetromino *t,
                 t->pos.x = x;
                 t->pos.y = y;
             }
-            if (t->data[0][y][x - LARGEUR_TERRAIN / 2] == 2) {
+            if (t->data[y][x - LARGEUR_TERRAIN / 2] == 2) {
                 printf("Coords : %d,%d\n", y, x - LARGEUR_TERRAIN / 2);
                 if (terrain[x][y].valeur == 1) { // si un bloc fixe obstrue la pièce
-                    printf("Erreur dans l'insertion du tetromino\n");
+                    printf("Erreur dans l'insertion du tetromino : (%d, %d)\n",x,y);
                     game_over();
                 }
 
@@ -429,31 +459,6 @@ void rotation_tetromino(Tetromino *t, int angle) {}
 void game_over() {
     printf("GAME OVER\n");
     exit(EXIT_SUCCESS);
-}
-
-void physique(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
-    for (int y = 0; y < HAUTEUR_TERRAIN; y++) {
-        for (int x = 0; x < LARGEUR_TERRAIN; x++) {
-            if ((terrain[x][y].valeur == 2) && (terrain[x][y + 1].valeur == 1)) {
-                printf("Solidification : %d,%d et %d,%d\n", x, y, x, y + 1); // debug
-                // TODO LA PIECE SE SOLIDIFIE
-            }
-            if ((terrain[x][y].valeur == 1) && (terrain[x][y + 1].valeur == 0)) {
-                printf("Gravitee 1: %d,%d et %d,%d\n", x, y, x, y + 1); // debug
-                terrain[x][y].valeur = 0;
-                terrain[x][y + 1].valeur = 1;
-            }
-            if ((terrain[x][y].valeur == 2) && (terrain[x][y + 1].valeur == 0)) {
-                printf("Gravitee 2: %d,%d et %d,%d\n", x, y, x, y + 1); // debug
-                /// TODO LA PIECE TOMBE DE 1 BLOC SI ELLE N'EST PAS OBSTRUE
-            }
-        }
-    }
-}
-
-void gravitee_piece(Tetromino *t,
-                    Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
-
 }
 
 void verifier_mouvement_piece(Tetromino *t,
