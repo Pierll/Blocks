@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     /** 	FIN INIT SDL	**/
 
     Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN] = {0}; // matrice 20*10
-    /*DEBUG CODE TERRAIN*/
+    /*DEBUG CODE TERRAIN*/ /*
     Case c = {1, (SDL_Color) {
         255, 0, 0, 255
     }
@@ -58,38 +58,36 @@ int main(int argc, char *argv[]) {
     terrain[9][1] = c;
     terrain[8][2] = c;
     //terrain[4][1] = c;
-    //terrain[8][0] = c;
+    //terrain[8][0] = c; */
     /* FIN DEBUG CODE TERRAIN*/
     Tetromino catalogue_tetromino[NOMBRE_TETROMINO];
-    int sequence_tetromino[NOMBRE_TETROMINO];
-    int tetromino_sac = 1;
+    int sac_tetromino[NOMBRE_TETROMINO];
+    int tetromino_sac = 0;
     int test_event = 777;
     remplir_catalogue(catalogue_tetromino);
-    Tetromino t =
-        catalogue_tetromino[tetromino_sac]; // choisir le tetromino du sac
+   
     int frame_attente = 1000.0 / FPS;
     int frame_debut = 0;
     int frame_delai;
     int difficultee = 1000; //en milliseconde
     int last_time = 0, current_time; //pour calculer le temps écoulé
-    if (!inserer_tetromino(&t, terrain)) {
-        game_over();
-    }
+    
+    
+    for (int i = 0; i < NOMBRE_TETROMINO; i++) sac_tetromino[i] = i;//on commence par remplir le sac dans l'ordre
+            
 
-    for (int i = 0; i < t.nbr_coords; i++) {
-        printf("%d,%d\n", t.coords[i].x, t.coords[i].y);
+    choisir_sequence_tetromino(sac_tetromino); /* melanger le sac */
+    for (int i = 0; i < NOMBRE_TETROMINO; i++) { /* DEBUG */
+        printf("%d,", sac_tetromino[i]);
     }
-    afficher_terrain_ascii(terrain);
+    
+    Tetromino t = catalogue_tetromino[sac_tetromino[tetromino_sac]]; // choisir le tetromino du sac
+    inserer_tetromino(&t, terrain); //inserer le premier tetromino
     
     /* BOUCLE PRINCIPALE */
     while (1) {
-        /*if (tetromino_sac > 7) { //le sac est vide  // A IMPLEMENTER
-            choisir_sequence_tetromino(sequence_tetromino);
-            tetromino_sac = 0;
-        }*/
         test_event = event_clavier(&event);
         if (test_event != 777) { // si l'utilisateur appuie sur une touche
-            verifier_mouvement_piece(&t, terrain);
             switch (test_event) {
             case FGAUCHE:
                 puts("GAUCHE");
@@ -109,9 +107,11 @@ int main(int argc, char *argv[]) {
                 break;
             case ESPACE:
                 puts("ESPACE");
-                /* instachute */
-                while (deplacement_tetrimino(&t, terrain, BAS)) {verifier_mouvement_piece(&t, terrain);}
-                //geler_tetromino(&t, terrain);
+                
+                /* instachute */ 
+                while (deplacement_tetrimino(&t, terrain, BAS)) {};
+                geler_tetromino(&t, terrain);
+                inserer_prochain_tetromino(&t, terrain, sac_tetromino, catalogue_tetromino, &tetromino_sac);
                 break;
             }
             afficher_terrain_ascii(terrain); //debug
@@ -130,9 +130,9 @@ int main(int argc, char *argv[]) {
         /** GESTION CHUTE TETROMINO **/
         current_time = SDL_GetTicks();
         if (current_time > (last_time + difficultee)) {
-            verifier_mouvement_piece(&t, terrain);
             if (!deplacement_tetrimino(&t, terrain, BAS)) {
                 geler_tetromino(&t, terrain);
+                inserer_prochain_tetromino(&t, terrain, sac_tetromino, catalogue_tetromino, &tetromino_sac);
             }
             last_time = current_time;
             afficher_terrain_ascii(terrain); //debug
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
 }
 
 int deplacement_tetrimino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int direction) {
-
+    verifier_mouvement_piece(t, terrain);
     if (t->direction_autorisee[direction] == 0) {
         puts("Echec deplacement : Direction non autorisee");
         return 0;
@@ -189,9 +189,21 @@ int deplacement_tetrimino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TE
     return 1;
 }
 
+void inserer_prochain_tetromino(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int sac_tetromino[NOMBRE_TETROMINO], Tetromino catalogue_tetromino[NOMBRE_TETROMINO], int* tetromino_sac) {
+    if (*tetromino_sac >= NOMBRE_TETROMINO) { //le sac est vide, on le melange a nouveau
+        printf("Nouveau sac\n");
+        choisir_sequence_tetromino(sac_tetromino); 
+        *tetromino_sac = 0;
+    } else {
+        (*tetromino_sac)++;
+    }
+    free(t->coords);
+    *t = catalogue_tetromino[sac_tetromino[*tetromino_sac]]; // choisir le prochain tetromino du sac
+    inserer_tetromino(t, terrain); 
+}
 
 int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) { //nbr_rotation sert à définir combien de fois une rotation de 90° seras effectuée
-    
+    verifier_mouvement_piece(t, terrain);
     if ((t->pos.y + t->rayon_rotation >= HAUTEUR_TERRAIN+1) || (t->pos.x + t->rayon_rotation >= LARGEUR_TERRAIN+1) || (t->pos.x < 0)) { //prévenir les depassement de tableau
         return 0;
     }
@@ -357,8 +369,7 @@ void remplir_catalogue(Tetromino catalogue_tetromino[]) {
 
 void choisir_sequence_tetromino(int sequence_tetromino[]) {
     int i;
-    for (i = 0; i < NOMBRE_TETROMINO;
-            i++) { // remplir le sac de pieces dans l'ordre
+    for (i = 0; i < NOMBRE_TETROMINO; i++) { // remplir le sac de pieces dans l'ordre
         sequence_tetromino[i] = i;
     }
     for (i = 0; i < NOMBRE_TETROMINO; i++) { // mélanger le sac
@@ -396,7 +407,7 @@ int inserer_tetromino(Tetromino *t,
                 printf("Coords : %d,%d\n", y, x - LARGEUR_TERRAIN / 2);
                 if (terrain[x][y].valeur == 1) { // si un bloc fixe obstrue la pièce
                     printf("Erreur dans l'insertion du tetromino\n");
-                    return 0;
+                    game_over();
                 }
 
                 terrain[x][y].valeur = 2;
@@ -417,7 +428,7 @@ void rotation_tetromino(Tetromino *t, int angle) {}
 
 void game_over() {
     printf("GAME OVER\n");
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
 void physique(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {

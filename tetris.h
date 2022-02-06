@@ -26,6 +26,7 @@ typedef struct Tetromino {
 } Tetromino;
 
 int deplacement_tetrimino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int direction);
+void inserer_prochain_tetromino(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int sac_tetromino[NOMBRE_TETROMINO], Tetromino catalogue_tetromino[NOMBRE_TETROMINO], int* tetromino_sac);
 int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
 void remplir_catalogue(Tetromino catalogue_tetromino[]);
 void choisir_sequence_tetromino(int sequence_tetromino[]);
