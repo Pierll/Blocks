@@ -3,7 +3,9 @@
 
 #define LARGEUR_TERRAIN 10
 #define HAUTEUR_TERRAIN 20
-#define TAILLE_BLOCK 17 /* la taille d'un bloc (case) en pixels */
+#define LARGEUR_FENETRE 640
+#define HAUTEUR_FENETRE 600
+#define TAILLE_BLOCK 22 /* la taille d'un bloc (case) en pixels */
 #define FPS 60
 
 enum touches{FBAS,FGAUCHE,FHAUT,FDROIT,ESPACE};

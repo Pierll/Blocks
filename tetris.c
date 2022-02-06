@@ -8,9 +8,11 @@
 #include "sdl.h"
 #include "tetris.h"
 
-int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) { //A CORRIGER (bug quand la pièce est en bas)
+int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) { 
 
-    //if (t->pos.y == HAUTEUR_TERRAIN)
+    if ((t->pos.y + t->rayon_rotation >= HAUTEUR_TERRAIN+1) || (t->pos.x + t->rayon_rotation >= LARGEUR_TERRAIN+1) || (t->pos.x < 0)) { //prévenir les depassement de tableau
+        return 0;
+    }
     
     int** buffer_piece = malloc(sizeof(int*) * t->rayon_rotation); // matrice où va être copiée la pièce 
     int** buffer_blocs = malloc(sizeof(int*) * t->rayon_rotation); // matrice où est copiée les blocs autre que la piece
@@ -24,35 +26,15 @@ int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) { //A
     /* on copie le tetromino et les blocs dans leur buffer respectifs */
     int i = 0; 
     int j = 0;
-    printf("DEBUG MATRICE\n");
     for (int y = t->pos.y; y < (t->pos.y + t->rayon_rotation); y++, i++) {
         int x = t->pos.x;
         j = 0;
         for (; x < (t->pos.x + t->rayon_rotation); x++, j++) {    
-            printf("%d", terrain[x][y].valeur);
             buffer_blocs[i][j] = (terrain[x][y].valeur == 1) ? 1 : 0;  
             buffer_piece[i][j] = (terrain[x][y].valeur == 2) ? 2 : 0;
             //printf("i/j:%d,%d | x/y:%d,%d\n",i,j,x,y); //DEBUG
         }
-        printf("\n");
     }
-    
-    /* DEBUG SECTION */
-    printf("Buffer piece:\n");
-    for (i = 0; i < t->rayon_rotation; i++) {
-        for (int u = 0; u < t->rayon_rotation; u++) {
-            printf("%d", buffer_piece[i][u]);
-        }
-        printf("\n");
-    }
-    printf("Buffer blocs:\n");
-    for (i = 0; i < t->rayon_rotation; i++) {
-        for (int u = 0; u < t->rayon_rotation; u++) {
-            printf("%d", buffer_blocs[i][u]);
-        }
-        printf("\n");
-    }
-    /* FIN DEBUG SECTION */
     
     /* copie de la rotation de la pièce dans le buffer rotat */
     i = 0; 
@@ -66,7 +48,6 @@ int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) { //A
         //puts("");
     }
     
-    printf("Buffer rotat:\n");
     for (i = 0; i < t->rayon_rotation; i++) {
         for (int u = 0; u < t->rayon_rotation; u++) {
             printf("%d", buffer_rotat[i][u]);
@@ -205,7 +186,7 @@ int main(int argc, char *argv[]) {
     SDL_Window *Fenetre = NULL;
     Fenetre =
         SDL_CreateWindow("Tetris", SDL_WINDOWPOS_UNDEFINED,
-                         SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN);
+                         SDL_WINDOWPOS_UNDEFINED, LARGEUR_FENETRE, HAUTEUR_FENETRE, SDL_WINDOW_SHOWN);
     SDL_Renderer *pRenderer =
         SDL_CreateRenderer(Fenetre, -1, SDL_RENDERER_ACCELERATED);
     SDL_Event event;
@@ -224,7 +205,7 @@ int main(int argc, char *argv[]) {
     /* FIN DEBUG CODE TERRAIN*/
     Tetromino catalogue_tetromino[NOMBRE_TETROMINO];
     int sequence_tetromino[NOMBRE_TETROMINO];
-    int tetromino_sac = 4;
+    int tetromino_sac = 1;
     int test_event = 777;
     remplir_catalogue(catalogue_tetromino);
     Tetromino t =

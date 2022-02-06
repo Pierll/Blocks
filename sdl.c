@@ -4,7 +4,7 @@
 
 void supprimer_case(int x, int y, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
     if (x > LARGEUR_TERRAIN || x < 0 || y > HAUTEUR_TERRAIN || y < 0) {
-        fprintf(stderr, "Erreur fatale : case a supprimer hors du terrain : (%d,%d)", x, y);
+        fprintf(stderr, "Erreur fatale : case a supprimer hors du terrain : (%d,%d)\n", x, y);
         exit(EXIT_FAILURE);
     }
     terrain[x][y].valeur = 0;
@@ -28,13 +28,15 @@ void afficher_terrain(SDL_Window* Fenetre, SDL_Renderer* pRenderer, Case terrain
     }
     SDL_SetRenderDrawColor(pRenderer, 0, 0, 0, 255);
     SDL_RenderClear(pRenderer); //nettoyer l'écran
-
+    dessiner_rectangle(pRenderer, 0, 0, LARGEUR_FENETRE, HAUTEUR_FENETRE, (SDL_Color) {48,48,48} ); //affichage du fond
     int facteur = TAILLE_BLOCK + 5; //le facteur corespond à TAILLE_BLOCK + l'espacement désiré sur les blocks
-    for (int y = 0; y<HAUTEUR_TERRAIN*facteur; y+=facteur) {
-        for (int x = 0; x<LARGEUR_TERRAIN*facteur; x+=facteur) {
+    int offset_x = 75; //le décalagage de l'abscisse du terrain
+    int offset_y = 0;  //le décalagage de l'ordonnée du terrain
+    for (int y = offset_y; y<(HAUTEUR_TERRAIN*facteur + offset_y); y+=facteur) {
+        for (int x = offset_x; x<(LARGEUR_TERRAIN*facteur + offset_x); x+=facteur) {
             //printf("%d",terrain[x/facteur][y/facteur].valeur); // DEBUG
             //printf(" %d,%d ",x/facteur, y/facteur); //DEBUG
-            dessiner_rectangle(pRenderer, x, y, TAILLE_BLOCK, TAILLE_BLOCK, terrain[x/facteur][y/facteur].couleur);//diviser par le facteur pour que les valeurs aillent de 0 à 19
+            dessiner_rectangle(pRenderer, x+offset_x, y+offset_y, TAILLE_BLOCK, TAILLE_BLOCK, terrain[(x-offset_x)/facteur][(y-offset_y)/facteur].couleur);//diviser par le facteur pour que les valeurs aillent de 0 à 19
         }
         //printf("\n"); // DEBUG
     }
