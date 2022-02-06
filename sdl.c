@@ -2,6 +2,15 @@
 #include <stdio.h>
 #include "sdl.h"
 
+void supprimer_case(int x, int y, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
+    if (x > LARGEUR_TERRAIN || x < 0 || y > HAUTEUR_TERRAIN || y < 0) {
+        fprintf(stderr, "Erreur fatale : case a supprimer hors du terrain : (%d,%d)", x, y);
+        exit(EXIT_FAILURE);
+    }
+    terrain[x][y].valeur = 0;
+    terrain[x][y].couleur = (SDL_Color) {0, 0, 0, 0};
+}
+
 void dessiner_rectangle(SDL_Renderer* pRenderer, int x, int y, int w, int h, SDL_Color couleur) {
     SDL_Rect rectangle = {x, y, w, h};
     if (SDL_SetRenderDrawColor(pRenderer, couleur.r, couleur.g, couleur.b, couleur.a) < 0)

@@ -13,6 +13,7 @@ typedef struct Case {
 	SDL_Color couleur;
 } Case;
 
+void supprimer_case(int x, int y, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
 void afficher_terrain(SDL_Window* Fenetre, SDL_Renderer* pRenderer, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
 void error_sdl_launch(char *message);
 void dessiner_rectangle(SDL_Renderer* pRenderer, int x, int y, int w, int h, SDL_Color couleur);

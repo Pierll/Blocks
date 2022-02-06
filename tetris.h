@@ -14,8 +14,7 @@ typedef struct Coord {
 
 typedef struct Tetromino {
 	int type;
-	Coord centre; //coordonnée à partir duquel la zone entournat la pièce est déterminée
-	int x,y;
+	Coord pos; //coordonnée à partir duquel la zone entournat la pièce est déterminée
 	Coord *coords; //tableu de coordonnées à allouer
 	int nbr_coords; //taille du tableau de coords
 

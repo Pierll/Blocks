@@ -8,30 +8,117 @@
 #include "sdl.h"
 #include "tetris.h"
 
-/*
-void verifier_extremite_tetromino(Tetromino* t) {
-    int extremite = 0;
-    for (int y = 0; y < TAILLE_MAX_TETROMINO; y++) {
-        for (int x = 0; x < TAILLE_MAX_TETROMINO; x++) {
-            printf(" %d ",x);
-            if (t->data[y][x] == 2 && x > extremite) {
-                printf("extremité : %d\n", x);
+int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) { //A CORRIGER (bug quand la pièce est en bas)
+
+    //if (t->pos.y == HAUTEUR_TERRAIN)
+    
+    int** buffer_piece = malloc(sizeof(int*) * t->rayon_rotation); // matrice où va être copiée la pièce 
+    int** buffer_blocs = malloc(sizeof(int*) * t->rayon_rotation); // matrice où est copiée les blocs autre que la piece
+    int** buffer_rotat = malloc(sizeof(int*) * t->rayon_rotation); // matrice où va être copiée une rotation de la pièce
+    for (int i = 0; i < t->rayon_rotation; i++) {
+        buffer_piece[i] = malloc(sizeof(int) * t->rayon_rotation);
+        buffer_blocs[i] = malloc(sizeof(int) * t->rayon_rotation);
+        buffer_rotat[i] = malloc(sizeof(int) * t->rayon_rotation);
+    }
+    
+    /* on copie le tetromino et les blocs dans leur buffer respectifs */
+    int i = 0; 
+    int j = 0;
+    printf("DEBUG MATRICE\n");
+    for (int y = t->pos.y; y < (t->pos.y + t->rayon_rotation); y++, i++) {
+        int x = t->pos.x;
+        j = 0;
+        for (; x < (t->pos.x + t->rayon_rotation); x++, j++) {    
+            printf("%d", terrain[x][y].valeur);
+            buffer_blocs[i][j] = (terrain[x][y].valeur == 1) ? 1 : 0;  
+            buffer_piece[i][j] = (terrain[x][y].valeur == 2) ? 2 : 0;
+            //printf("i/j:%d,%d | x/y:%d,%d\n",i,j,x,y); //DEBUG
+        }
+        printf("\n");
+    }
+    
+    /* DEBUG SECTION */
+    printf("Buffer piece:\n");
+    for (i = 0; i < t->rayon_rotation; i++) {
+        for (int u = 0; u < t->rayon_rotation; u++) {
+            printf("%d", buffer_piece[i][u]);
+        }
+        printf("\n");
+    }
+    printf("Buffer blocs:\n");
+    for (i = 0; i < t->rayon_rotation; i++) {
+        for (int u = 0; u < t->rayon_rotation; u++) {
+            printf("%d", buffer_blocs[i][u]);
+        }
+        printf("\n");
+    }
+    /* FIN DEBUG SECTION */
+    
+    /* copie de la rotation de la pièce dans le buffer rotat */
+    i = 0; 
+    j = 0;
+    for (int y = 0; y < t->rayon_rotation; y++, i++) {
+        j = 0;
+        for (int x = t->rayon_rotation-1; x > -1; x--, j++)  {
+            buffer_rotat[i][j] = buffer_piece[x][y];
+            //printf("%d", buffer_piece[x][y]);
+        }
+        //puts("");
+    }
+    
+    printf("Buffer rotat:\n");
+    for (i = 0; i < t->rayon_rotation; i++) {
+        for (int u = 0; u < t->rayon_rotation; u++) {
+            printf("%d", buffer_rotat[i][u]);
+        }
+        printf("\n");
+    }
+    
+    /* vérification d'une obstruction de la pièce */
+     for (i = 0; i < t->rayon_rotation; i++) {
+        for (int y = 0; y < t->rayon_rotation; y++) {
+            if (buffer_rotat[i][y] == 2 && buffer_blocs[i][y] == 1) { //la rotation ne peut avoir lieu, un bloc gène
+                printf("Impossible d'effectuer la rotation de la pièce !\n");
+                return 0;
+            }
+                
+        }
+    }
+    
+    /* tout est bon, on retire l'ancienne pièce du terrain et place la nouvelle version */
+    
+    for (int y = t->pos.y; y < (t->pos.y + t->rayon_rotation); y++) { //retirer les anciens 2
+        for (int x = t->pos.x; x < (t->pos.x + t->rayon_rotation); x++) {    
+            if (terrain[x][y].valeur == 2) supprimer_case(x, y, terrain);
+        }
+        printf("\n");
+    }
+    
+    int k = 0; //pour itérer dans le tableau des coords
+    i = 0;
+    j = 0;
+    for (int y = t->pos.y; y < (t->pos.y + t->rayon_rotation); y++, i++) { //mettre les nouveau 2
+        j = 0;
+        for (int x = t->pos.x; x < (t->pos.x + t->rayon_rotation); x++, j++) {    
+            if (buffer_rotat[i][j] == 2) {
+                terrain[x][y].valeur = 2;
+                terrain[x][y].couleur = (SDL_Color) t->couleur;
+                t->coords[k] = (Coord) {x, y}; //on update les coordonnées
+                k++;
             }
         }
     }
-}
-*/
-
-void rotation(Tetromino t) {
-    puts("");
-    int data[4][4];
-    for (int i = 0; i < TAILLE_MAX_TETROMINO; i++) {
-        for (int y = TAILLE_MAX_TETROMINO-1; y > -1; y--)  {
-            data[y][i] = t.data[0][y][i];
-            printf("%d", data[y][i]);
-        }
-        puts("");
+    
+    for (int i = 0; i < t->rayon_rotation; i++) {
+        free(buffer_piece[i]);
+        free(buffer_blocs[i]);
+        free(buffer_rotat[i]);
     }
+    free(buffer_piece);
+    free(buffer_blocs);
+    free(buffer_rotat);
+    
+    return 1;
 }
 
 void swap(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN], int x, int y, int x2,
@@ -52,10 +139,11 @@ int deplacement_tetrimino(Tetromino *t,
 
     for (int i = 0; i < t->nbr_coords; i++) {
         /* on commence par retirer toute les cases de l'ancienne position */
-        terrain[t->coords[i].x][t->coords[i].y].valeur = 0;
+        /*terrain[t->coords[i].x][t->coords[i].y].valeur = 0;
         terrain[t->coords[i].x][t->coords[i].y].couleur = (SDL_Color) {
             0, 0, 0, 0
-        };
+        };*/
+        supprimer_case(t->coords[i].x, t->coords[i].y, terrain);
         switch (direction) {
         case DROITE:
             (t->coords[i].x)++;
@@ -76,7 +164,18 @@ int deplacement_tetrimino(Tetromino *t,
         terrain[t->coords[i].x][t->coords[i].y].couleur = (SDL_Color) t->couleur;
         //printf("Couleur in deplacement: %d\n", t->couleur);
     }
-
+    switch (direction) { //on update le pos
+        case DROITE:
+            (t->pos.x)++;
+            break;
+        case GAUCHE:
+            (t->pos.x)--;
+            break;
+        case BAS:
+            (t->pos.y)++;
+            break;
+        }
+    printf("Nouvelle pos: %d, %d\n", t->pos.x, t->pos.y);
     return 1;
 }
 
@@ -118,14 +217,14 @@ int main(int argc, char *argv[]) {
         255, 0, 0, 255
     }
              };
-    // terrain[9][1] = c;
+    terrain[9][1] = c;
     terrain[6][2] = c;
     //terrain[4][1] = c;
     //terrain[8][0] = c;
     /* FIN DEBUG CODE TERRAIN*/
     Tetromino catalogue_tetromino[NOMBRE_TETROMINO];
     int sequence_tetromino[NOMBRE_TETROMINO];
-    int tetromino_sac = 1;
+    int tetromino_sac = 4;
     int test_event = 777;
     remplir_catalogue(catalogue_tetromino);
     Tetromino t =
@@ -167,31 +266,25 @@ int main(int argc, char *argv[]) {
             switch (test_event) {
             case FGAUCHE:
                 puts("GAUCHE");
-                if (deplacement_tetrimino(&t, terrain, GAUCHE)) {
-                    (t.x) -= 1;
-                }
+                deplacement_tetrimino(&t, terrain, GAUCHE);
                 break;
             case FBAS:
                 puts("BAS");
-                if (deplacement_tetrimino(&t, terrain, BAS)) {
-                    (t.y) += 1;
-                }
+                deplacement_tetrimino(&t, terrain, BAS);
                 break;
             case FDROIT:
                 puts("DROIT");
-                if (deplacement_tetrimino(&t, terrain, DROITE)) {
-                    (t.x) += 1;
-                }
+                deplacement_tetrimino(&t, terrain, DROITE);
                 break;
             case FHAUT:
                 puts("HAUT");
+                rotation(&t, terrain);
                 break;
             case ESPACE:
                 puts("ESPACE");
                 break;
             }
             afficher_terrain_ascii(terrain);
-            printf("NOUVELLE POS : %d, %d", t.x, t.y);
         }
 
         afficher_terrain(Fenetre, pRenderer, terrain);
@@ -301,25 +394,30 @@ int inserer_tetromino(Tetromino *t,
 
     int i = 0; //pour compter dans le tableau des coords
     for (int y = 0; y < TAILLE_MAX_TETROMINO; y++) {
-        for (int x = LARGEUR_TERRAIN / 2;
-                x < LARGEUR_TERRAIN / 2 + TAILLE_MAX_TETROMINO; x++) {
+        for (int x = LARGEUR_TERRAIN / 2; x < LARGEUR_TERRAIN / 2 + TAILLE_MAX_TETROMINO; x++) {
+            if ((y == 0) && (x == (LARGEUR_TERRAIN / 2))) { //la première case est la case à partir de laquelle on peut calculer la zone entourant le tetromino
+                printf("pos: %d, %d\n", x, y);
+                t->pos.x = x;
+                t->pos.y = y;
+            }
             if (t->data[0][y][x - LARGEUR_TERRAIN / 2] == 2) {
+                printf("Coords : %d,%d\n", y, x - LARGEUR_TERRAIN / 2);
                 if (terrain[x][y].valeur == 1) { // si un bloc fixe obstrue la pièce
                     printf("Erreur dans l'insertion du tetromino\n");
                     return 0;
                 }
+
                 terrain[x][y].valeur = 2;
                 terrain[x][y].couleur = t->couleur;
 
                 t->coords[i].x = x;
                 t->coords[i].y = y;
                 i++;
+
+
             }
         }
     }
-    t->x = LARGEUR_TERRAIN / 2;
-    t->y = 0; // position par défaut
-    printf("Endroit insertion: %d, %d\n", t->x, t->y);
     return 1;
 }
 
@@ -352,13 +450,7 @@ void physique(Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
 
 void gravitee_piece(Tetromino *t,
                     Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
-    for (int y = t->y; y < t->y + TAILLE_MAX_TETROMINO; y++) {
-        for (int x = t->x; x < t->x + TAILLE_MAX_TETROMINO; x++) {
-            if (terrain[x][y].valeur == 2) {
-                terrain[x][y].valeur = 1;
-            }
-        }
-    }
+
 }
 
 void verifier_mouvement_piece(Tetromino *t,
@@ -392,7 +484,7 @@ void verifier_mouvement_piece(Tetromino *t,
                 t->direction_autorisee[BAS] = 0;
         }
 
-        if (y == HAUTEUR_TERRAIN) {
+        if (y == HAUTEUR_TERRAIN-1) {
             t->direction_autorisee[BAS] = 0;
         } else {
             if (terrain[x][y-1].valeur == 1)
