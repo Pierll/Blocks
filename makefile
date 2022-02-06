@@ -4,13 +4,14 @@ BINAIRES = $(patsubst %.c,%.o,${SOURCES})
 FLAGS = -g -Wall 
 LIBS = -lSDL2
 
-all: tetris
+all: blocks
 
-tetris: ${BINAIRES}
+blocks: ${BINAIRES}
 	${GCC} $^ -o $@ ${LIBS}
 %.o: %.c sdl.h
-%.o: %.c tetris.h
+%.o: %.c blocks.h
 	${GCC} -c ${FLAGS} $<
 	
 clean:
-	rm -f *.o tetris
+	rm -f *.o blocks
+

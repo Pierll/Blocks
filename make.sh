@@ -3,5 +3,5 @@
 make
 if [ $? -eq 0 ] #si la compilation réussi
 then
-	./tetris
+	./blocks
 fi
