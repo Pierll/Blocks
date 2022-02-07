@@ -1,8 +1,8 @@
 GCC = gcc
 SOURCES = $(wildcard *.c)
 BINAIRES = $(patsubst %.c,%.o,${SOURCES})
-FLAGS = -g -Wall 
-LIBS = -lSDL2
+FLAGS = -Wall -g
+LIBS = -lSDL2 -lSDL2_ttf -lm
 
 all: blocks
 
