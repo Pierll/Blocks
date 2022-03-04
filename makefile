@@ -1,7 +1,7 @@
 GCC = gcc
 SOURCES = $(wildcard *.c)
 BINAIRES = $(patsubst %.c,%.o,${SOURCES})
-FLAGS = -Wall -g
+FLAGS = -Wall -O3
 LIBS = -lSDL2 -lSDL2_ttf -lm
 
 all: blocks

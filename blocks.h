@@ -31,7 +31,6 @@ void remplir_catalogue(Tetromino catalogue_tetromino[]);
 void choisir_sequence_tetromino(int sequence_tetromino[]);
 int inserer_tetromino(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]);
 void verifier_mouvement_piece(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]); 
-void rotation_tetromino(Tetromino* t, int angle);
 void game_over();
 
 #endif

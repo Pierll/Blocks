@@ -222,7 +222,7 @@ void inserer_prochain_tetromino(Tetromino* t, Case terrain[LARGEUR_TERRAIN][HAUT
     inserer_tetromino(t, terrain);
 }
 
-int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) { //nbr_rotation sert à définir combien de fois une rotation de 90° seras effectuée
+int rotation(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAIN]) {
     verifier_mouvement_piece(t, terrain);
     if ((t->pos.y + t->rayon_rotation >= HAUTEUR_TERRAIN+1) || (t->pos.x + t->rayon_rotation >= LARGEUR_TERRAIN+1) || (t->pos.x < 0)) { //prévenir les depassement de tableau
         return 0;
@@ -430,10 +430,8 @@ int inserer_tetromino(Tetromino *t, Case terrain[LARGEUR_TERRAIN][HAUTEUR_TERRAI
     return 1;
 }
 
-void rotation_tetromino(Tetromino *t, int angle) {}
-
 void game_over() {
-    printf("GAME OVER\n");
+    printf("GAME OVER\n Score: %d\n", score);
     exit(EXIT_SUCCESS);
 }
 
